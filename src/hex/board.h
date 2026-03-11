@@ -5,7 +5,7 @@
 #include <array>
 
 enum class Player {
-    RED, BLUE, NONE
+    WHITE, BLACK, NONE
 };
 
 template<int Size>
@@ -52,7 +52,7 @@ private:
 
 template<int Size>
 Board<Size>::Board() : board_(Size * Size, Player::NONE), dsu_(Size * Size + 4) {
-    turn_ = Player::RED;
+    turn_ = Player::BLACK;
     states_.clear();
 
     for (int i = 0; i < Size * Size; i++)
@@ -77,6 +77,8 @@ void Board<Size>::make_move(Move move) {
 
     board_[pos] = turn_;
 
+    // std::cout << move.to_string(Size) << " " << pos << "\n";
+
     for (auto &[dx, dy] : directions) {
         int new_row = row + dx, new_col = col + dy;
         auto new_pos = get_pos(new_row, new_col);
@@ -88,18 +90,18 @@ void Board<Size>::make_move(Move move) {
         }
         else {
             // join with edge
-            if (new_row < 0)
+            if (new_row < 0 && turn_ == Player::WHITE)
                 operations += dsu_.join(pos, edges_[0]);
-            if (new_col < 0)
+            if (new_col < 0 && turn_ == Player::BLACK)
                 operations += dsu_.join(pos, edges_[1]);
-            if (new_row >= Size)
+            if (new_row >= Size && turn_ == Player::WHITE)
                 operations += dsu_.join(pos, edges_[2]);
-            if (new_col >= Size)
+            if (new_col >= Size && turn_ == Player::BLACK)
                 operations += dsu_.join(pos, edges_[3]);
         }
     }
 
-    turn_ = turn_ == Player::RED ? Player::BLUE : Player::RED;
+    turn_ = turn_ == Player::WHITE ? Player::BLACK : Player::WHITE;
     states_.emplace_back(move, operations);
     
     // remove current position from the list of empty cells
@@ -114,7 +116,10 @@ void Board<Size>::undo() {
     while (operations--)
         dsu_.undo();
 
-    empty_positions_.add(move.get_pos());
+    auto pos = move.get_pos();
+    empty_positions_.add(pos);
+    board_[pos] = Player::NONE;
+    turn_ = turn_ == Player::WHITE ? Player::BLACK : Player::WHITE;
 }
 
 template<int Size>

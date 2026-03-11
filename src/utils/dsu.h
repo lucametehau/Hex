@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <iostream>
 
 // Disjoint set union
 class DSU {
@@ -12,6 +13,7 @@ public:
     }
 
     bool join(int x, int y) {
+        // std::cout << "joining " << x << " with " << y << "\n";
         x = get_par(x);
         y = get_par(y);
 

@@ -18,10 +18,6 @@ public:
         return !children_indexes_.empty();
     }
 
-    bool is_terminal() const {
-        return false;
-    }
-
     Move get_move() const {
         return move_;
     }

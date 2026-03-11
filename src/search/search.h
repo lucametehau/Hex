@@ -4,17 +4,17 @@
 #include <limits>
 
 constexpr std::size_t inf = std::numeric_limits<std::size_t>::max();
-constexpr int BOARD_SIZE = 7;
+constexpr int BOARD_SIZE = 11;
 
 class Searcher {
 public:
     Searcher() = delete;
-    Searcher(Board<BOARD_SIZE>& board, std::size_t max_nodes = 1'000'000) : board_(board), root_board_(board), tree_(max_nodes), nodes_(0), max_nodes_(max_nodes) {
+    Searcher(Board<BOARD_SIZE>& board, std::size_t max_nodes = 30'000'000) : board_(board), root_board_(board), tree_(max_nodes), nodes_(0), max_nodes_(max_nodes) {
         // root node
         push_node(inf, Move(0));
     }
 
-    void search();
+    std::pair<Move, float> search();
 
 private:
     std::size_t select();

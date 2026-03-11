@@ -1,4 +1,5 @@
 #include "search.h"
+#include <limits>
 #include <random>
 #include <iostream>
 
@@ -16,7 +17,7 @@ void Searcher::iteration() {
     board_ = root_board_;
     const auto node_idx = select();
 
-    if (!expand(node_idx))
+    if (!board_.is_game_over() && !expand(node_idx))
         return;
 
     auto score = play(node_idx);
@@ -32,7 +33,7 @@ std::size_t Searcher::select() {
     std::size_t node_idx = 0;
 
     while (true) {
-        if (tree_[node_idx].is_terminal() || !tree_[node_idx].is_expanded())
+        if (board_.is_game_over() || !tree_[node_idx].is_expanded())
             return node_idx;
 
         // pick children with best exploration score?
@@ -51,7 +52,7 @@ std::size_t Searcher::select() {
             }
 
             // UCT
-            float score = !visits ? 2 : 1.414f * std::sqrtf(std::log(parent_visits) / visits) + wins / visits;
+            float score = !visits ? std::numeric_limits<float>::infinity() : 1.414f * std::sqrtf(std::log(parent_visits) / visits) + wins / visits;
 
             if (score > best_score) {
                 best_score = score;
@@ -68,9 +69,6 @@ std::size_t Searcher::select() {
 
 bool Searcher::expand(std::size_t node_idx) {
     auto &node = tree_[node_idx];
-
-    if (node.is_terminal())
-        return false;
 
     auto moves = board_.get_legal_moves();
 
@@ -90,7 +88,7 @@ float Searcher::play(std::size_t node_idx) {
         auto moves = board_.get_legal_moves();
         board_.make_move(moves[rng(sed) % moves.size()]);
     }
-    return cur == board_.get_turn() ? 0.0f : 1.0f;
+    return cur == board_.get_turn() ? 1.0f : 0.0f;
 }
 
 void Searcher::backprop(std::size_t node_idx, float score) {
@@ -101,9 +99,9 @@ void Searcher::backprop(std::size_t node_idx, float score) {
     }
 }
 
-void Searcher::search() {
+std::pair<Move, float> Searcher::search() {
     int iterations = 0;
-    constexpr int max_iterations = 1'000;
+    constexpr int max_iterations = 1'000'000;
 
     while (iterations < max_iterations) {
         iteration();
@@ -116,7 +114,7 @@ void Searcher::search() {
         auto child_node_idx = tree_[0].at(i);
         auto visits = tree_[child_node_idx].get_visits();
 
-        std::cout << tree_[child_node_idx].get_move().get_pos() << " has " << visits << "  visits\n";
+        // std::cout << tree_[child_node_idx].get_move().get_pos() << " has " << visits << "  visits\n";
 
         if (visits > most_visits) {
             most_visits = visits;
@@ -124,7 +122,7 @@ void Searcher::search() {
         }
     }
 
-    auto move = tree_[best_child].get_move().get_pos();
-
-    std::cout << "Playing " << move / BOARD_SIZE << " " << move % BOARD_SIZE << "\n";
+    std::cout << nodes_ << "\n";
+    
+    return std::make_pair(tree_[best_child].get_move(), 1.0 * tree_[best_child].get_wins() / tree_[best_child].get_visits());
 }

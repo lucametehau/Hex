@@ -1,5 +1,6 @@
 #pragma once
 #include <fstream>
+#include <string>
 
 class Move {
 public:
@@ -11,6 +12,13 @@ public:
 
     int get_pos() const {
         return pos_;
+    }
+
+    std::string to_string(const int size) const {
+        std::string cell;
+        cell += char('a' + pos_ / size);
+        cell += std::to_string(1 + pos_ % size);
+        return cell;
     }
 
 private:

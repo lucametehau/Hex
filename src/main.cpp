@@ -1,12 +1,10 @@
 #include <iostream>
-#include "hex/board.h"
-#include "search/search.h"
+#include "uhi/uhi.h"
 
 int main() {
-    Board<BOARD_SIZE> board;
-    Searcher searcher(board);
+    UHI uhi;
 
-    searcher.search();
+    uhi.uhi_loop();
 
     return 0;
 }
