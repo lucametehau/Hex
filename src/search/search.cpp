@@ -1,4 +1,5 @@
 #include "search.h"
+#include "limits.h"
 #include <limits>
 #include <random>
 #include <iostream>
@@ -33,7 +34,8 @@ std::size_t Searcher::select() {
     std::size_t node_idx = 0;
 
     while (true) {
-        if (board_.is_game_over() || !tree_[node_idx].is_expanded())
+        const auto node = tree_[node_idx];
+        if (board_.is_game_over() || !node.is_expanded())
             return node_idx;
 
         // pick children with best exploration score?
@@ -41,8 +43,8 @@ std::size_t Searcher::select() {
         std::size_t best_child = 0;
         float best_score = -1;
         auto parent_visits = tree_[node_idx].get_visits();
-        for (std::size_t i = 0; i < tree_[node_idx].size(); i++) {
-            auto child_node_idx = tree_[node_idx].at(i);
+        for (std::size_t i = 0; i < node.size(); i++) {
+            auto child_node_idx = node.at(i);
             auto visits = tree_[child_node_idx].get_visits();
             auto wins = tree_[child_node_idx].get_wins();
 
@@ -68,11 +70,14 @@ std::size_t Searcher::select() {
 }
 
 bool Searcher::expand(std::size_t node_idx) {
+    /*
+    Add sons of selected leaf to the search tree.
+    */
     auto &node = tree_[node_idx];
 
     auto moves = board_.get_legal_moves();
 
-    if (nodes_ + moves.size() >= max_nodes_)
+    if (nodes_ + moves.size() >= tree_.size())
         return false;
 
     for (auto &move : moves) {
@@ -83,6 +88,9 @@ bool Searcher::expand(std::size_t node_idx) {
 }
 
 float Searcher::play(std::size_t node_idx) {
+    /*
+    Play out random game starting from selected leaf.
+    */
     auto cur = board_.get_turn();
     while (!board_.is_game_over()) {
         auto moves = board_.get_legal_moves();
@@ -92,6 +100,9 @@ float Searcher::play(std::size_t node_idx) {
 }
 
 void Searcher::backprop(std::size_t node_idx, float score) {
+    /*
+    Backpropagate result of play out on the move chain.
+    */
     while (node_idx != inf) {
         tree_[node_idx].update_stats(score);
         node_idx = tree_[node_idx].get_parent();
@@ -99,7 +110,14 @@ void Searcher::backprop(std::size_t node_idx, float score) {
     }
 }
 
-std::pair<Move, float> Searcher::search() {
+std::pair<Move, float> Searcher::search(Board<BOARD_SIZE> &board, SearchLimits &limits) {
+    nodes_ = 0;
+    board_ = root_board_ = board;
+    tree_.resize(limits.get_max_nodes());
+
+    // root node
+    push_node(inf, Move(0));
+
     int iterations = 0;
     constexpr int max_iterations = 1'000'000;
 

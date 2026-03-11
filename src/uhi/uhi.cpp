@@ -1,12 +1,39 @@
 #include "uhi.h"
 #include "../search/search.h"
 #include <iostream>
+#include <sstream>
+
+void UHI::listen_for_options() {
+    std::string input;
+    while(getline(std::cin, input)) {
+        std::istringstream iss;
+        std::string setoption, name;
+        iss >> setoption;
+        
+        if (setoption != "set")
+            return;
+
+        iss >> name;
+        if (name != "time")
+            return;
+        
+        std::size_t max_time;
+        iss >> max_time;
+
+        limits_.set_max_time(max_time);
+    }
+}
 
 void UHI::uhi_loop() {
     std::cout << "This is a noob Hex engine, welcome!\n";
 
-    Board<BOARD_SIZE> board;
+    listen_for_options();
 
+    Board<BOARD_SIZE> board;
+    Searcher searcher;
+
+    // placeholder until I implement some protocol
+    // like FEN in chess
     auto wait_input = [&]() -> bool {
         std::cout << "Please input your move:\n";
 
@@ -25,8 +52,7 @@ void UHI::uhi_loop() {
     while (wait_input());
 
     while (!board.is_game_over()) {
-        Searcher searcher(board);
-        auto [move, score] = searcher.search();
+        auto [move, score] = searcher.search(board, limits_);
 
         std::cout << "Playing move " << move.to_string(BOARD_SIZE) << " with score of " << 100.0 * score << "%\n";
 

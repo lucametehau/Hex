@@ -1,20 +1,17 @@
 #pragma once
 #include "node.h"
+#include "limits.h"
 #include "../hex/board.h"
 #include <limits>
 
 constexpr std::size_t inf = std::numeric_limits<std::size_t>::max();
-constexpr int BOARD_SIZE = 11;
+constexpr int BOARD_SIZE = 7;
 
 class Searcher {
 public:
-    Searcher() = delete;
-    Searcher(Board<BOARD_SIZE>& board, std::size_t max_nodes = 30'000'000) : board_(board), root_board_(board), tree_(max_nodes), nodes_(0), max_nodes_(max_nodes) {
-        // root node
-        push_node(inf, Move(0));
-    }
+    Searcher() = default;
 
-    std::pair<Move, float> search();
+    std::pair<Move, float> search(Board<BOARD_SIZE> &board, SearchLimits &limits);
 
 private:
     std::size_t select();
@@ -33,5 +30,5 @@ private:
 private:
     Board<BOARD_SIZE> board_, root_board_;
     std::vector<Node> tree_;
-    std::size_t nodes_, max_nodes_;
+    std::size_t nodes_;
 };
