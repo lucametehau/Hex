@@ -111,6 +111,7 @@ void Searcher::backprop(std::size_t node_idx, float score) {
 }
 
 std::pair<Move, float> Searcher::search(Board<BOARD_SIZE> &board, SearchLimits &limits) {
+    limits.set_start_time();
     nodes_ = 0;
     board_ = root_board_ = board;
     tree_.resize(limits.get_max_nodes());
@@ -121,18 +122,17 @@ std::pair<Move, float> Searcher::search(Board<BOARD_SIZE> &board, SearchLimits &
     int iterations = 0;
     constexpr int max_iterations = 1'000'000;
 
-    while (iterations < max_iterations) {
+    while (iterations < max_iterations && !limits.check_time_elapsed()) {
         iteration();
         iterations++;
     }
 
     std::size_t most_visits = 0;
     std::size_t best_child = 0;
-    for (std::size_t i = 0; i < tree_[0].size(); i++) {
-        auto child_node_idx = tree_[0].at(i);
+    const auto &root_node = tree_[0];
+    for (std::size_t i = 0; i < root_node.size(); i++) {
+        auto child_node_idx = root_node.at(i);
         auto visits = tree_[child_node_idx].get_visits();
-
-        // std::cout << tree_[child_node_idx].get_move().get_pos() << " has " << visits << "  visits\n";
 
         if (visits > most_visits) {
             most_visits = visits;
@@ -140,7 +140,9 @@ std::pair<Move, float> Searcher::search(Board<BOARD_SIZE> &board, SearchLimits &
         }
     }
 
-    std::cout << nodes_ << "\n";
+    std::cout << std::format(
+        "Searched {} nodes and {} iterations for {} seconds\n", nodes_, iterations, limits.get_time_elapsed() / 1000.0
+    );
     
     return std::make_pair(tree_[best_child].get_move(), 1.0 * tree_[best_child].get_wins() / tree_[best_child].get_visits());
 }
