@@ -6,7 +6,7 @@
 void UHI::listen_for_options() {
     std::string input;
     while(getline(std::cin, input)) {
-        std::istringstream iss;
+        std::istringstream iss(input);
         std::string setoption, name;
         iss >> setoption;
         
