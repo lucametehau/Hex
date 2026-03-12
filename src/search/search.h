@@ -5,7 +5,11 @@
 #include <limits>
 
 constexpr std::size_t inf = std::numeric_limits<std::size_t>::max();
+
 constexpr int BOARD_SIZE = 7;
+
+constexpr float FPU_CONSTANT = 1.0f;
+constexpr float EXPLORATION_CONSTANT = 1.414f;
 
 class Searcher {
 public:

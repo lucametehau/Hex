@@ -27,11 +27,9 @@ void Searcher::iteration() {
 }
 
 float Searcher::get_score(std::size_t parent_visits, std::size_t visits, float wins) const {
-    // UCT
-    if (!visits)
-        return std::numeric_limits<float>::infinity();
-    const float exploit = wins / visits;
-    const float exploration = 1.414f * std::sqrtf(std::log(parent_visits) / visits);
+    // UCT + FPU
+    const float exploit = !visits ? FPU_CONSTANT : wins / visits;
+    const float exploration = EXPLORATION_CONSTANT * std::sqrtf(std::log(parent_visits) / (visits + 1));
     return exploit + exploration;
 }
 
@@ -91,7 +89,7 @@ bool Searcher::expand(std::size_t node_idx) {
 
     bool set_first = false;
     for (auto &move : moves) {
-        const auto child_node_idx = push_node(node_idx, moves[0]);
+        const auto child_node_idx = push_node(node_idx, move);
         if (!set_first) {
             node.add_first_child(child_node_idx);
             set_first = true;
