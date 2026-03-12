@@ -62,7 +62,8 @@ public:
                     os << ".  "; // Empty space
                 }
             }
-            os << "\n";
+            if (row < Size - 1)
+                os << "\n";
         }
         return os;
     }

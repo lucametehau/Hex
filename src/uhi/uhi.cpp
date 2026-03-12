@@ -5,20 +5,28 @@
 
 UHI::UHI() {
     // create command map
-    commands_["boardsize"] = {};
+    commands_["boardsize"] = [&](std::istringstream &iss){
+        int n;
+        iss >> n;
+        if (iss >> n);
+    };
     commands_["clear_board"] = [&](std::istringstream&) {
         board_ = Board<BOARD_SIZE>();
     };
     commands_["showboard"] = [&](std::istringstream&) {
-        std::cout << board_ << "\n";
+        std::cout << "\n" << board_;
     };
     commands_["final_score"] = [&](std::istringstream&) {
         if (board_.is_game_over())
-            std::cout << (board_.get_turn() == Player::WHITE ? "B+" : "W+") << "\n";
+            std::cout << (board_.get_turn() == Player::WHITE ? "B+" : "W+");
         else
-            std::cout << "cannot score\n";
+            std::cout << "cannot score";
     };
     commands_["play"] = [&](std::istringstream &iss) {
+        std::string player;
+        iss >> player;
+        assert ((player == "white" ? Player::WHITE : Player::BLACK) == board_.get_turn());
+
         std::string move;
         iss >> move;
         board_.make_move(Move(move, BOARD_SIZE));
@@ -30,9 +38,9 @@ UHI::UHI() {
 
         const auto [move, score] = searcher_.search(board_, limits_);
 
-        std::cout << move.to_string(BOARD_SIZE) << "\n";
+        std::cout << move.to_string(BOARD_SIZE) << "" << std::endl;
 
-        std::cout << "Playing with score of " << 100.0 * score << "%\n";
+        std::cerr << "Playing with score of " << 100.0 * score << "%";
     };
     commands_["genmove"] = [&](std::istringstream &iss) {
         std::string player;
@@ -41,9 +49,9 @@ UHI::UHI() {
 
         const auto [move, score] = searcher_.search(board_, limits_);
 
-        std::cout << move.to_string(BOARD_SIZE) << "\n";
+        std::cout << move.to_string(BOARD_SIZE);
 
-        std::cout << "Playing with score of " << 100.0 * score << "%\n";
+        std::cerr << std::endl << "Playing with score of " << 100.0 * score << "%";
 
         board_.make_move(move);
     };
@@ -54,34 +62,38 @@ UHI::UHI() {
         const auto moves = board_.get_legal_moves();
         for (auto &move : moves)
             std::cout << move.to_string(BOARD_SIZE) << " ";
-        std::cout << "\n";
     };
 
     commands_["name"] = [&](std::istringstream&) {
-        std::cout << "Abeille by X\n";
+        std::cout << "Abeille";
     };
     commands_["version"] = [&](std::istringstream&) {
-        std::cout << "1.0\n";
+        std::cout << "1";
     };
     commands_["protocol_version"] = [&](std::istringstream&) {
-        std::cout << "2\n";
+        std::cout << "2";
+    };
+    commands_["hexgui-analyze_commands"] = [&](std::istringstream&) {
+        
     };
     commands_["list_commands"] = [&](std::istringstream&) {
+        std::size_t counter = 0;
         for (auto &[command, _] : commands_)
-            std::cout <<  command << "\n";
+            std::cout << command << (++counter < commands_.size() ? "\n" : "");
     };
     commands_["known_command"] = [&](std::istringstream &iss) {
         std::string command;
         iss >> command;
-        std::cout << (commands_.find(command) != commands_.end() ? "true" : "false") << "\n";
+        std::cout << (commands_.find(command) != commands_.end() ? "true" : "false");
     };
     commands_["quit"] = [&](std::istringstream&) {
+        std::cout << std::endl << std::endl;
         exit(0);
     };
 }
 
 void UHI::uhi_loop() {
-    std::cout << "This is a noob Hex engine, welcome!\n";
+    std::cerr << "This is a noob Hex engine, welcome!" << std::endl;
 
     std::string input;
     while (getline(std::cin, input)) {
@@ -91,11 +103,13 @@ void UHI::uhi_loop() {
 
         if (commands_.find(command) == commands_.end()) {
             std::cout << std::format(
-                "unknown command <{}>\n", command
-            );
+                "? unknown command <{}>", command
+            ) << std::endl << std::endl;
             continue;
         }
 
+        std::cout << "= ";
         commands_[command](iss);
+        std::cout << std::endl << std::endl;
     }
 }

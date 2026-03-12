@@ -153,7 +153,7 @@ std::pair<Move, float> Searcher::search(Board<BOARD_SIZE> &board, SearchLimits &
         }
     }
 
-    std::cout << std::format(
+    std::cerr << std::format(
         "Searched {} nodes and {} iterations for {} seconds\n", nodes_, iterations, limits.get_time_elapsed() / 1000.0
     );
     
