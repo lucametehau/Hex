@@ -33,7 +33,7 @@ public:
     // ngl I'm too lazy to do this myself, credits to Gemini
     friend std::ostream& operator<<(std::ostream &os, const Board &board) {
         // 1. Print column headers (Numbers, based on your Move::to_string)
-        os << "  ";
+        os << " ";
         for (int col = 0; col < Size; ++col) {
             if (col + 1 < 10) os << " "; // Padding for single digits
             os << (col + 1) << " ";
