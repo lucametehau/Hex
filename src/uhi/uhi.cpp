@@ -3,66 +3,99 @@
 #include <iostream>
 #include <sstream>
 
-void UHI::listen_for_options() {
-    std::string input;
-    while(getline(std::cin, input)) {
-        std::istringstream iss(input);
-        std::string setoption, name;
-        iss >> setoption;
-        
-        if (setoption != "set")
-            return;
+UHI::UHI() {
+    // create command map
+    commands_["boardsize"] = {};
+    commands_["clear_board"] = [&](std::istringstream&) {
+        board_ = Board<BOARD_SIZE>();
+    };
+    commands_["showboard"] = [&](std::istringstream&) {
+        std::cout << board_ << "\n";
+    };
+    commands_["final_score"] = [&](std::istringstream&) {
+        if (board_.is_game_over())
+            std::cout << (board_.get_turn() == Player::WHITE ? "B+" : "W+") << "\n";
+        else
+            std::cout << "cannot score\n";
+    };
+    commands_["play"] = [&](std::istringstream &iss) {
+        std::string move;
+        iss >> move;
+        board_.make_move(Move(move, BOARD_SIZE));
+    };
+    commands_["reg_genmove"] = [&](std::istringstream &iss) {
+        std::string player;
+        iss >> player;
+        assert ((player == "white" ? Player::WHITE : Player::BLACK) == board_.get_turn());
 
-        iss >> name;
-        if (name != "time")
-            return;
-        
-        std::size_t max_time;
-        iss >> max_time;
+        const auto [move, score] = searcher_.search(board_, limits_);
 
-        limits_.set_max_time(max_time);
-    }
+        std::cout << move.to_string(BOARD_SIZE) << "\n";
+
+        std::cout << "Playing with score of " << 100.0 * score << "%\n";
+    };
+    commands_["genmove"] = [&](std::istringstream &iss) {
+        std::string player;
+        iss >> player;
+        assert ((player == "white" ? Player::WHITE : Player::BLACK) == board_.get_turn());
+
+        const auto [move, score] = searcher_.search(board_, limits_);
+
+        std::cout << move.to_string(BOARD_SIZE) << "\n";
+
+        std::cout << "Playing with score of " << 100.0 * score << "%\n";
+
+        board_.make_move(move);
+    };
+    commands_["undo"] = [&](std::istringstream&) {
+        board_.undo();
+    };
+    commands_["all_legal_moves"] = [&](std::istringstream&) {
+        const auto moves = board_.get_legal_moves();
+        for (auto &move : moves)
+            std::cout << move.to_string(BOARD_SIZE) << " ";
+        std::cout << "\n";
+    };
+
+    commands_["name"] = [&](std::istringstream&) {
+        std::cout << "Abeille by X\n";
+    };
+    commands_["version"] = [&](std::istringstream&) {
+        std::cout << "1.0\n";
+    };
+    commands_["protocol_version"] = [&](std::istringstream&) {
+        std::cout << "2\n";
+    };
+    commands_["list_commands"] = [&](std::istringstream&) {
+        for (auto &[command, _] : commands_)
+            std::cout <<  command << "\n";
+    };
+    commands_["known_command"] = [&](std::istringstream &iss) {
+        std::string command;
+        iss >> command;
+        std::cout << (commands_.find(command) != commands_.end() ? "true" : "false") << "\n";
+    };
+    commands_["quit"] = [&](std::istringstream&) {
+        exit(0);
+    };
 }
 
 void UHI::uhi_loop() {
     std::cout << "This is a noob Hex engine, welcome!\n";
 
-    listen_for_options();
+    std::string input;
+    while (getline(std::cin, input)) {
+        std::istringstream iss(input);
+        std::string command;
+        iss >> command;
 
-    Board<BOARD_SIZE> board;
-    Searcher searcher;
-
-    // placeholder until I implement some protocol
-    // like FEN in chess
-    auto wait_input = [&]() -> bool {
-        std::cout << "Please input your move:\n";
-
-        std::string s;
-        std::cin >> s;
-
-        if (s == "start")
-            return false;
-
-        int row = (s[0] - 'a'), col = std::stoi(s.substr(1)) - 1;
-
-        board.make_move(Move(row, col, BOARD_SIZE));
-        return true;
-    };
-
-    while (wait_input());
-
-    while (!board.is_game_over()) {
-        auto [move, score] = searcher.search(board, limits_);
-
-        std::cout << "Playing move " << move.to_string(BOARD_SIZE) << " with score of " << 100.0 * score << "%\n";
-
-        board.make_move(move);
-
-        if (board.is_game_over()) {
-            std::cout << "Good game, I won!\n";
-            break;
+        if (commands_.find(command) == commands_.end()) {
+            std::cout << std::format(
+                "unknown command <{}>\n", command
+            );
+            continue;
         }
 
-        wait_input();
+        commands_[command](iss);
     }
 }

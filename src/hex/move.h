@@ -6,6 +6,8 @@ class Move {
 public:
     Move() = default;
 
+    Move(std::string &move, int size) : Move(move[0] - 'a', std::stoi(move.substr(1)) - 1, size) {}
+
     Move(int row, int col, int size) : pos_(row * size + col) {}
 
     Move(int pos) :pos_(pos) {}

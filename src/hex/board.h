@@ -3,6 +3,8 @@
 #include "../utils/fast_set.h"
 #include "move.h"
 #include <array>
+#include <fstream>
+#include <ostream>
 
 enum class Player {
     WHITE, BLACK, NONE
@@ -27,6 +29,44 @@ public:
         return turn_;
     }
 
+
+    // ngl I'm too lazy to do this myself, credits to Gemini
+    friend std::ostream& operator<<(std::ostream &os, const Board &board) {
+        // 1. Print column headers (Numbers, based on your Move::to_string)
+        os << "  ";
+        for (int col = 0; col < Size; ++col) {
+            if (col + 1 < 10) os << " "; // Padding for single digits
+            os << (col + 1) << " ";
+        }
+        os << "\n";
+
+        // 2. Print each row
+        for (int row = 0; row < Size; ++row) {
+            // Indent to create the slanted Hex shape
+            for (int i = 0; i < row; ++i) {
+                os << " ";
+            }
+
+            // Print row label (Letters, based on your Move::to_string)
+            os << char('a' + row) << "  ";
+
+            // Print the cells
+            for (int col = 0; col < Size; ++col) {
+                Player p = board.get_cell(row, col);
+                
+                if (p == Player::WHITE) {
+                    os << "W  ";
+                } else if (p == Player::BLACK) {
+                    os << "B  ";
+                } else {
+                    os << ".  "; // Empty space
+                }
+            }
+            os << "\n";
+        }
+        return os;
+    }
+
 private:
     int get_pos(int row, int col) const {
         return row * Size + col;
@@ -34,6 +74,10 @@ private:
 
     bool is_inside(int row, int col) const {
         return 0 <= row && row < Size && 0 <= col && col < Size;
+    }
+
+    Player get_cell(int row, int col) const {
+        return board_[get_pos(row, col)];
     }
 
 private:

@@ -5,7 +5,7 @@
 
 class SearchLimits {
 public:
-    SearchLimits() : time_set_(false), max_nodes_(30'000'000), max_time_(0) {}
+    SearchLimits() : time_set_(true), max_nodes_(30'000'000), max_time_(3'000) {}
 
     void set_max_nodes(const std::size_t max_nodes) {
         max_nodes_ = max_nodes;
