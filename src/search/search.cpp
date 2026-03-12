@@ -80,8 +80,14 @@ bool Searcher::expand(std::size_t node_idx) {
     if (nodes_ + moves.size() >= tree_.size())
         return false;
 
+    bool set_first = false;
     for (auto &move : moves) {
-        node.add_child(push_node(node_idx, move));
+        const auto child_node_idx = push_node(node_idx, moves[0]);
+        if (!set_first) {
+            node.add_first_child(child_node_idx);
+            set_first = true;
+        }
+        node.add_child();
     }
 
     return true;

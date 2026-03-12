@@ -5,9 +5,8 @@
 class Node {
 public:
     Node() = default;
-    Node(std::size_t parent_index, Move move) : parent_index_(parent_index), move_(move) {
+    Node(std::size_t parent_index, Move move) : parent_index_(parent_index), move_(move), num_children_(0) {
         visits_ = wins_ = 0;
-        children_indexes_.clear();
     }
 
     std::size_t get_parent() const {
@@ -15,23 +14,27 @@ public:
     }
 
     bool is_expanded() const {
-        return !children_indexes_.empty();
+        return num_children_;
     }
 
     Move get_move() const {
         return move_;
     }
 
-    void add_child(std::size_t idx) {
-        children_indexes_.push_back(idx);
+    void add_first_child(std::size_t idx) {
+        first_children_index_ = idx;
+    }
+
+    void add_child() {
+        num_children_++;
     }
 
     std::size_t size() const {
-        return children_indexes_.size();
+        return num_children_;
     }
 
     std::size_t at(std::size_t idx) const {
-        return children_indexes_[idx];
+        return first_children_index_ + idx;
     }
 
     float get_wins() const {
@@ -52,5 +55,8 @@ private:
     std::size_t visits_;
     std::size_t parent_index_;
     Move move_;
-    std::vector<std::size_t> children_indexes_;
+
+    // we assume that the children are consecutive indices
+    std::size_t first_children_index_;
+    std::size_t num_children_;
 };
