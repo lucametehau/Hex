@@ -14,6 +14,8 @@ public:
     std::pair<Move, float> search(Board<BOARD_SIZE> &board, SearchLimits &limits);
 
 private:
+    float get_score(std::size_t parent_visits, std::size_t visits, float wins) const;
+
     std::size_t select();
 
     bool expand(std::size_t node_idx);

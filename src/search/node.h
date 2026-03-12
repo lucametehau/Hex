@@ -21,7 +21,7 @@ public:
         return move_;
     }
 
-    void add_first_child(std::size_t idx) {
+    void add_first_child(const std::size_t idx) {
         first_children_index_ = idx;
     }
 
@@ -33,7 +33,7 @@ public:
         return num_children_;
     }
 
-    std::size_t at(std::size_t idx) const {
+    std::size_t at(const std::size_t idx) const {
         return first_children_index_ + idx;
     }
 
@@ -45,7 +45,7 @@ public:
         return visits_;
     }
 
-    void update_stats(float score) {
+    void update_stats(const float score) {
         visits_++;
         wins_ += score;
     }

@@ -26,6 +26,15 @@ void Searcher::iteration() {
     backprop(node_idx, score);
 }
 
+float Searcher::get_score(std::size_t parent_visits, std::size_t visits, float wins) const {
+    // UCT
+    if (!visits)
+        return std::numeric_limits<float>::infinity();
+    const float exploit = wins / visits;
+    const float exploration = 1.414f * std::sqrtf(std::log(parent_visits) / visits);
+    return exploit + exploration;
+}
+
 std::size_t Searcher::select() {
     /*
     Explore a non-terminal path and select it for expansion.
@@ -44,9 +53,9 @@ std::size_t Searcher::select() {
         float best_score = -1;
         auto parent_visits = tree_[node_idx].get_visits();
         for (std::size_t i = 0; i < node.size(); i++) {
-            auto child_node_idx = node.at(i);
-            auto visits = tree_[child_node_idx].get_visits();
-            auto wins = tree_[child_node_idx].get_wins();
+            const auto child_node_idx = node.at(i);
+            const auto visits = tree_[child_node_idx].get_visits();
+            const auto wins = tree_[child_node_idx].get_wins();
 
             if (!parent_visits) {
                 best_child = child_node_idx;
@@ -54,7 +63,7 @@ std::size_t Searcher::select() {
             }
 
             // UCT
-            float score = !visits ? std::numeric_limits<float>::infinity() : 1.414f * std::sqrtf(std::log(parent_visits) / visits) + wins / visits;
+            const float score = get_score(parent_visits, visits, wins);
 
             if (score > best_score) {
                 best_score = score;
@@ -62,7 +71,7 @@ std::size_t Searcher::select() {
             }
         }
 
-        auto new_node_idx = best_child;
+        const auto new_node_idx = best_child;
         
         board_.make_move(tree_[new_node_idx].get_move());
         node_idx = new_node_idx;
@@ -75,7 +84,7 @@ bool Searcher::expand(std::size_t node_idx) {
     */
     auto &node = tree_[node_idx];
 
-    auto moves = board_.get_legal_moves();
+    const auto moves = board_.get_legal_moves();
 
     if (nodes_ + moves.size() >= tree_.size())
         return false;
@@ -97,7 +106,7 @@ float Searcher::play(std::size_t node_idx) {
     /*
     Play out random game starting from selected leaf.
     */
-    auto cur = board_.get_turn();
+    const auto cur = board_.get_turn();
     while (!board_.is_game_over()) {
         auto moves = board_.get_legal_moves();
         board_.make_move(moves[rng(sed) % moves.size()]);
