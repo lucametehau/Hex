@@ -16,20 +16,35 @@ std::size_t Searcher::push_node(std::size_t parent_index, Move move) {
 
 void Searcher::iteration() {
     board_ = root_board_;
+    std::fill(playout_played_by_.begin(), playout_played_by_.end(), Player::NONE);
+
     const auto node_idx = select();
 
     if (!board_.is_game_over() && !expand(node_idx))
         return;
 
+    const auto node_turn = board_.get_turn();
+
     auto score = play(node_idx);
 
-    backprop(node_idx, score);
+    backprop(node_idx, node_turn, score);
 }
 
-float Searcher::get_score(std::size_t parent_visits, std::size_t visits, float wins) const {
-    // UCT + FPU
-    const float exploit = !visits ? FPU_CONSTANT : wins / visits;
+float Searcher::get_score(std::size_t parent_visits, std::size_t visits, float wins, std::size_t visits_amaf, float wins_amaf) const {
+    // UCT + RAVE + FPU
+    float exploit = FPU_CONSTANT;
+
+    if (visits || visits_amaf) {
+        const float exploit_normal = !visits ? FPU_CONSTANT : wins / visits;
+        const float exploit_amaf = !visits_amaf ? FPU_CONSTANT : wins_amaf / visits_amaf;
+
+        const float beta = visits_amaf / (visits_amaf + visits + visits_amaf * visits / 10000.0);
+
+        exploit = (1.0 - beta) * exploit_normal + beta * exploit_amaf;
+    }
+
     const float exploration = EXPLORATION_CONSTANT * std::sqrtf(std::log(parent_visits) / (visits + 1));
+
     return exploit + exploration;
 }
 
@@ -45,23 +60,24 @@ std::size_t Searcher::select() {
         if (board_.is_game_over() || !node.is_expanded())
             return node_idx;
 
-        // pick children with best exploration score?
-        // random for now
+        // pick next best children
         std::size_t best_child = 0;
         float best_score = -1;
         auto parent_visits = tree_[node_idx].get_visits();
         for (std::size_t i = 0; i < node.size(); i++) {
             const auto child_node_idx = node.at(i);
-            const auto visits = tree_[child_node_idx].get_visits();
-            const auto wins = tree_[child_node_idx].get_wins();
+            const auto child_node = tree_[child_node_idx];
+            const auto visits = child_node.get_visits();
+            const auto wins = child_node.get_wins();
+            const auto visits_amaf = child_node.get_visits_amaf();
+            const auto wins_amaf = child_node.get_wins_amaf();
 
             if (!parent_visits) {
                 best_child = child_node_idx;
                 break;
             }
 
-            // UCT
-            const float score = get_score(parent_visits, visits, wins);
+            const float score = get_score(parent_visits, visits, wins, visits_amaf, wins_amaf);
 
             if (score > best_score) {
                 best_score = score;
@@ -70,8 +86,10 @@ std::size_t Searcher::select() {
         }
 
         const auto new_node_idx = best_child;
+        const auto move = tree_[new_node_idx].get_move();
         
-        board_.make_move(tree_[new_node_idx].get_move());
+        playout_played_by_[move.get_pos()] = board_.get_turn();
+        board_.make_move(move);
         node_idx = new_node_idx;
     }
 }
@@ -106,19 +124,40 @@ float Searcher::play(std::size_t node_idx) {
     */
     const auto cur = board_.get_turn();
     while (!board_.is_game_over()) {
-        auto moves = board_.get_legal_moves();
-        board_.make_move(moves[rng(sed) % moves.size()]);
+        const auto moves = board_.get_legal_moves();
+        const auto move = moves[rng(sed) % moves.size()];
+        playout_played_by_[move.get_pos()] = board_.get_turn();
+        board_.make_move(move);
     }
     return cur == board_.get_turn() ? 1.0f : 0.0f;
 }
 
-void Searcher::backprop(std::size_t node_idx, float score) {
+void Searcher::backprop(std::size_t node_idx, Player turn, float score) {
     /*
-    Backpropagate result of play out on the move chain.
+    Backpropagate result of playout on the move chain.
     */
     while (node_idx != inf) {
         tree_[node_idx].update_stats(score);
-        node_idx = tree_[node_idx].get_parent();
+        const auto parent_idx = tree_[node_idx].get_parent();
+
+        // RAVE updates / AMAF updates
+        // look at siblings which play a move we played in the playout
+        // and update the move's stats
+        // kind of like history heuristic in chess, but more local, not global
+        if (parent_idx != inf) {
+            turn = turn == Player::WHITE ? Player::BLACK : Player::WHITE;
+
+            auto &parent_node = tree_[parent_idx];
+            for (std::size_t i = 0; i < parent_node.size(); i++) {
+                const auto child_node_idx = parent_node.at(i);
+                const auto pos = tree_[child_node_idx].get_move().get_pos();
+
+                if (playout_played_by_[pos] == turn)
+                    tree_[child_node_idx].update_amaf_stats(score);
+            }
+        }
+
+        node_idx = parent_idx;
         score = 1.0 - score;
     }
 }
