@@ -50,10 +50,10 @@ def calculate_elo(wins, losses):
     # Standard Elo difference formula
     return -400.0 * math.log10(1.0 / win_rate - 1.0)
 
-def play_game(engine_black, engine_white, board_size):
-    # engine_black.send(f"boardsize {board_size}")
+def play_game(engine_black, engine_white, timelimit):
+    engine_black.send(f"setoption time {timelimit}")
     engine_black.send("clear_board")
-    # engine_white.send(f"boardsize {board_size}")
+    engine_white.send(f"setoption time {timelimit}")
     engine_white.send("clear_board")
 
     print(f"Match: {engine_black.name} (Black) vs {engine_white.name} (White)")
@@ -110,7 +110,7 @@ def run_tournament(bin_a, bin_b, games, board_size):
 if __name__ == "__main__":
     # Example usage: python3 arena.py ./hex_old ./hex_new 100 11
     if len(sys.argv) != 5:
-        print("Usage: python3 arena.py <binary1> <binary2> <games> <board_size>")
+        print("Usage: python3 arena.py <binary1> <binary2> <games> <timelimit>")
         sys.exit(1)
 
     run_tournament(sys.argv[1], sys.argv[2], int(sys.argv[3]), int(sys.argv[4]))

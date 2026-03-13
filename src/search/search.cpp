@@ -30,7 +30,7 @@ void Searcher::iteration() {
     backprop(node_idx, node_turn, score);
 }
 
-float Searcher::get_score(std::size_t parent_visits, std::size_t visits, float wins, std::size_t visits_amaf, float wins_amaf) const {
+float Searcher::get_score(std::size_t parent_visits, std::size_t visits, float wins, std::size_t visits_amaf, float wins_amaf, float policy) const {
     // UCT + RAVE + FPU
     float exploit = FPU_CONSTANT;
 
@@ -43,7 +43,7 @@ float Searcher::get_score(std::size_t parent_visits, std::size_t visits, float w
         exploit = (1.0 - beta) * exploit_normal + beta * exploit_amaf;
     }
 
-    const float exploration = EXPLORATION_CONSTANT * std::sqrtf(std::log(parent_visits) / (visits + 1));
+    const float exploration = EXPLORATION_CONSTANT * policy * std::sqrtf(std::log(parent_visits) / (visits + 1));
 
     return exploit + exploration;
 }
@@ -71,13 +71,14 @@ std::size_t Searcher::select() {
             const auto wins = child_node.get_wins();
             const auto visits_amaf = child_node.get_visits_amaf();
             const auto wins_amaf = child_node.get_wins_amaf();
+            const auto policy = 1.0f / node.size();
 
             if (!parent_visits) {
                 best_child = child_node_idx;
                 break;
             }
 
-            const float score = get_score(parent_visits, visits, wins, visits_amaf, wins_amaf);
+            const float score = get_score(parent_visits, visits, wins, visits_amaf, wins_amaf, policy);
 
             if (score > best_score) {
                 best_score = score;
