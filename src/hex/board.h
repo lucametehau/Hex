@@ -29,6 +29,7 @@ public:
         return turn_;
     }
 
+    bool makes_bridge(const Move move) const;
 
     // ngl I'm too lazy to do this myself, credits to Gemini
     friend std::ostream& operator<<(std::ostream &os, const Board &board) {
@@ -182,4 +183,44 @@ template<int Size>
 bool Board<Size>::is_game_over() {
     return dsu_.is_connected(edges_[0], edges_[2]) || 
            dsu_.is_connected(edges_[1], edges_[3]);
+}
+
+template<int Size>
+bool Board<Size>::makes_bridge(const Move move) const {
+    struct BridgeCheck {
+        int br, bc, n1r, n1c, n2r, n2c;
+    };
+    constexpr std::array<BridgeCheck, 6> bridges = {{
+        {-1, -1,  0, -1, -1,  0}, // Top-Left Bridge
+        {-2,  1, -1,  0, -1,  1}, // Top Bridge
+        {-1,  2, -1,  1,  0,  1}, // Top-Right Bridge
+        { 1,  1,  0,  1,  1,  0}, // Bottom-Right Bridge
+        { 2, -1,  1,  0,  1, -1}, // Bottom Bridge
+        { 1, -2,  1, -1,  0, -1}  // Bottom-Left Bridge
+    }};
+
+    auto pos = move.get_pos();
+    int row = pos / Size;
+    int col = pos % Size;
+    float score = 0.0f;
+
+    for (const auto& b : bridges) {
+        int br = row + b.br, bc = col + b.bc;
+        
+        // Does this move connect to one of our existing stones?
+        if (is_inside(br, bc) && board_[get_pos(br, bc)] == turn_) {
+            
+            int n1r = row + b.n1r, n1c = col + b.n1c;
+            int n2r = row + b.n2r, n2c = col + b.n2c;
+
+            // A bridge is only secure if BOTH shared neighbors are empty!
+            bool n1_empty = is_inside(n1r, n1c) && board_[get_pos(n1r, n1c)] == Player::NONE;
+            bool n2_empty = is_inside(n2r, n2c) && board_[get_pos(n2r, n2c)] == Player::NONE;
+
+            if (n1_empty && n2_empty) {
+                return true; // Give a massive boost for a solid bridge!
+            }
+        }
+    }
+    return false;
 }

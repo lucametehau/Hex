@@ -30,7 +30,10 @@ void Searcher::iteration() {
     backprop(node_idx, node_turn, score);
 }
 
-float Searcher::get_score(std::size_t parent_visits, std::size_t visits, float wins, std::size_t visits_amaf, float wins_amaf, float policy) const {
+float Searcher::get_score(
+    std::size_t parent_visits, std::size_t visits, float wins, std::size_t visits_amaf, float wins_amaf, 
+    float policy, int h
+) const {
     // UCT + RAVE + FPU
     float exploit = FPU_CONSTANT;
 
@@ -43,9 +46,42 @@ float Searcher::get_score(std::size_t parent_visits, std::size_t visits, float w
         exploit = (1.0 - beta) * exploit_normal + beta * exploit_amaf;
     }
 
-    const float exploration = EXPLORATION_CONSTANT * policy * std::sqrtf(std::log(parent_visits) / (visits + 1));
+    const float exploration = EXPLORATION_CONSTANT * policy * std::sqrtf(std::log(parent_visits) / (visits + 1)) + 1.0 * h / (visits + 1);
 
     return exploit + exploration;
+}
+
+std::size_t Searcher::get_best_child(std::size_t node_idx) {
+    // pick next best children
+    const auto node = tree_[node_idx];
+    std::size_t best_child = 0;
+    float best_score = -1;
+    auto parent_visits = tree_[node_idx].get_visits();
+
+    for (std::size_t i = 0; i < node.size(); i++) {
+        const auto child_node_idx = node.at(i);
+        const auto child_node = tree_[child_node_idx];
+        const auto visits = child_node.get_visits();
+        const auto wins = child_node.get_wins();
+        const auto visits_amaf = child_node.get_visits_amaf();
+        const auto wins_amaf = child_node.get_wins_amaf();
+        const auto policy = 1.0f / node.size();
+        // const auto h = board_.makes_bridge(child_node.get_move().get_pos()) ? 50 : 0;
+
+        if (!parent_visits) {
+            best_child = child_node_idx;
+            break;
+        }
+
+        const float score = get_score(parent_visits, visits, wins, visits_amaf, wins_amaf, policy, 0);
+
+        if (score > best_score) {
+            best_score = score;
+            best_child = child_node_idx;
+        }
+    }
+
+    return best_child;
 }
 
 std::size_t Searcher::select() {
@@ -61,32 +97,7 @@ std::size_t Searcher::select() {
             return node_idx;
 
         // pick next best children
-        std::size_t best_child = 0;
-        float best_score = -1;
-        auto parent_visits = tree_[node_idx].get_visits();
-        for (std::size_t i = 0; i < node.size(); i++) {
-            const auto child_node_idx = node.at(i);
-            const auto child_node = tree_[child_node_idx];
-            const auto visits = child_node.get_visits();
-            const auto wins = child_node.get_wins();
-            const auto visits_amaf = child_node.get_visits_amaf();
-            const auto wins_amaf = child_node.get_wins_amaf();
-            const auto policy = 1.0f / node.size();
-
-            if (!parent_visits) {
-                best_child = child_node_idx;
-                break;
-            }
-
-            const float score = get_score(parent_visits, visits, wins, visits_amaf, wins_amaf, policy);
-
-            if (score > best_score) {
-                best_score = score;
-                best_child = child_node_idx;
-            }
-        }
-
-        const auto new_node_idx = best_child;
+        const auto new_node_idx = get_best_child(node_idx);
         const auto move = tree_[new_node_idx].get_move();
         
         playout_played_by_[move.get_pos()] = board_.get_turn();

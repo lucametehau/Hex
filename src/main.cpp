@@ -1,4 +1,5 @@
 #include <iostream>
+#include "search/search.h"
 #include "uhi/uhi.h"
 
 int main() {
