@@ -3,6 +3,8 @@
 #include <iostream>
 #include <sstream>
 
+constexpr std::string_view VERSION = "1.1";
+
 UHI::UHI() {
     // create command map
     commands_["boardsize"] = [&](std::istringstream &iss){
@@ -45,6 +47,12 @@ UHI::UHI() {
     commands_["genmove"] = [&](std::istringstream &iss) {
         std::string player;
         iss >> player;
+
+        if (board_.is_game_over()) {
+            std::cout << "resign";
+            return;
+        }
+
         assert ((player == "white" ? Player::WHITE : Player::BLACK) == board_.get_turn());
 
         const auto [move, score] = searcher_.search(board_, limits_);
@@ -68,7 +76,7 @@ UHI::UHI() {
         std::cout << "Abeille";
     };
     commands_["version"] = [&](std::istringstream&) {
-        std::cout << "1";
+        std::cout << VERSION;
     };
     commands_["protocol_version"] = [&](std::istringstream&) {
         std::cout << "2";
