@@ -7,6 +7,7 @@ public:
     Node() = default;
     Node(std::size_t parent_index, Move move) : parent_index_(parent_index), move_(move), num_children_(0) {
         visits_ = wins_ = 0;
+        visits_amaf_ = wins_amaf_ = 0;
     }
 
     std::size_t get_parent() const {
@@ -45,14 +46,30 @@ public:
         return visits_;
     }
 
+    float get_wins_amaf() const {
+        return wins_amaf_;
+    }
+
+    std::size_t get_visits_amaf() const {
+        return visits_amaf_;
+    }
+
     void update_stats(const float score) {
         visits_++;
         wins_ += score;
     }
 
+    void update_amaf_stats(const float score) {
+        visits_amaf_++;
+        wins_amaf_ += score;
+    }
+
 private:
     float wins_;
     std::size_t visits_;
+    float wins_amaf_;
+    std::size_t visits_amaf_;
+
     std::size_t parent_index_;
     Move move_;
 

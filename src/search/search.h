@@ -6,7 +6,7 @@
 
 constexpr std::size_t inf = std::numeric_limits<std::size_t>::max();
 
-constexpr int BOARD_SIZE = 7;
+constexpr int BOARD_SIZE = 13;
 
 constexpr float FPU_CONSTANT = 1.0f;
 constexpr float EXPLORATION_CONSTANT = 1.414f;
@@ -18,7 +18,7 @@ public:
     std::pair<Move, float> search(Board<BOARD_SIZE> &board, SearchLimits &limits);
 
 private:
-    float get_score(std::size_t parent_visits, std::size_t visits, float wins) const;
+    float get_score(std::size_t parent_visits, std::size_t visits, float wins, std::size_t visits_amaf, float wins_amaf) const;
 
     std::size_t select();
 
@@ -26,7 +26,7 @@ private:
 
     float play(std::size_t node_idx);
 
-    void backprop(std::size_t node_idx, float score);
+    void backprop(std::size_t node_idx, Player turn, float score);
 
     void iteration();
 
@@ -37,4 +37,6 @@ private:
     Board<BOARD_SIZE> board_, root_board_;
     std::vector<Node> tree_;
     std::size_t nodes_;
+
+    std::array<Player, BOARD_SIZE * BOARD_SIZE> playout_played_by_;
 };
