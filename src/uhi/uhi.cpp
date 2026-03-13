@@ -72,6 +72,7 @@ UHI::UHI() {
             std::cout << move.to_string(BOARD_SIZE) << " ";
     };
 
+    // server interaction
     commands_["name"] = [&](std::istringstream&) {
         std::cout << "Abeille";
     };
@@ -97,6 +98,16 @@ UHI::UHI() {
     commands_["quit"] = [&](std::istringstream&) {
         std::cout << std::endl << std::endl;
         exit(0);
+    };
+    commands_["setoption"] = [&](std::istringstream &iss) {
+        std::string name;
+        iss >> name;
+        std::size_t value;
+        iss >> value;
+        if (name == "time")
+            limits_.set_max_time(value);
+        else if (name == "nodes")
+            limits_.set_max_nodes(value);
     };
 }
 
