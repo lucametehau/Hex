@@ -9,7 +9,6 @@ This is a recreative Hex, the grid game, engine, as means to learn more about MC
 
 # TODO
 
-- Add FPU (First play urgency)
 - Add PUCT (Predictor UCT)
 - Try RAVE (Rapid Action Value Estimation)
 - Look how to introduce Neural Networks?
