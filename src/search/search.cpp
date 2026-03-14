@@ -20,7 +20,7 @@ void Searcher::iteration() {
 
     const auto node_idx = select();
 
-    if (!board_.is_game_over() && !expand(node_idx))
+    if (!board_.is_game_over() && tree_[node_idx].get_visits() && !expand(node_idx))
         return;
 
     const auto node_turn = board_.get_turn();
