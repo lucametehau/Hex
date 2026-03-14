@@ -3,7 +3,7 @@
 #include <iostream>
 #include <sstream>
 
-constexpr std::string_view VERSION = "1.3";
+constexpr std::string_view VERSION = "1.4";
 
 UHI::UHI() {
     // create command map
