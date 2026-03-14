@@ -4,9 +4,9 @@
 #include <random>
 #include <iostream>
 
-
-std::mt19937 sed(time(0));
 std::uniform_int_distribution<> rng;
+const auto seed = std::chrono::high_resolution_clock::now().time_since_epoch().count() ^ (uintptr_t)&rng;
+std::mt19937 sed(seed);
 
 std::size_t Searcher::push_node(std::size_t parent_index, Move move) {
     auto idx = nodes_++;
@@ -30,13 +30,17 @@ void Searcher::iteration() {
     backprop(node_idx, node_turn, score);
 }
 
-float Searcher::get_score(std::size_t parent_visits, std::size_t visits, float wins, std::size_t visits_amaf, float wins_amaf, float policy) const {
+float Searcher::get_score(
+    std::size_t parent_visits, std::size_t visits, float wins, std::size_t visits_amaf, float wins_amaf, 
+    float policy,  float parent_exploit
+) {
     // UCT + RAVE + FPU
-    float exploit = FPU_CONSTANT;
+    const float fpu_constant = !parent_visits ? FPU_CONSTANT : 1.0f - parent_exploit;
+    float exploit = fpu_constant;
 
     if (visits || visits_amaf) {
-        const float exploit_normal = !visits ? FPU_CONSTANT : wins / visits;
-        const float exploit_amaf = !visits_amaf ? FPU_CONSTANT : wins_amaf / visits_amaf;
+        const float exploit_normal = !visits ? fpu_constant : wins / visits;
+        const float exploit_amaf = !visits_amaf ? fpu_constant : wins_amaf / visits_amaf;
 
         const float beta = visits_amaf / (visits_amaf + visits + visits_amaf * visits / 10000.0);
 
@@ -63,7 +67,7 @@ std::size_t Searcher::select() {
         // pick next best children
         std::size_t best_child = 0;
         float best_score = -1;
-        auto parent_visits = tree_[node_idx].get_visits();
+        auto parent_visits = node.get_visits();
         for (std::size_t i = 0; i < node.size(); i++) {
             const auto child_node_idx = node.at(i);
             const auto child_node = tree_[child_node_idx];
@@ -78,7 +82,7 @@ std::size_t Searcher::select() {
                 break;
             }
 
-            const float score = get_score(parent_visits, visits, wins, visits_amaf, wins_amaf, policy);
+            const float score = get_score(parent_visits, visits, wins, visits_amaf, wins_amaf, policy, 1.0 * node.get_wins() / node.get_visits());
 
             if (score > best_score) {
                 best_score = score;
