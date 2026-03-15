@@ -14,20 +14,22 @@ std::size_t Searcher::push_node(std::size_t parent_index, Move move) {
     return idx;
 }
 
-void Searcher::iteration() {
+bool Searcher::iteration() {
     board_ = root_board_;
     std::fill(playout_played_by_.begin(), playout_played_by_.end(), Player::NONE);
 
     const auto node_idx = select();
 
     if (!board_.is_game_over() && tree_[node_idx].get_visits() && !expand(node_idx))
-        return;
+        return false;
 
     const auto node_turn = board_.get_turn();
 
     auto score = play(node_idx);
 
     backprop(node_idx, node_turn, score);
+
+    return true;
 }
 
 float Searcher::get_score(
@@ -105,13 +107,13 @@ bool Searcher::expand(std::size_t node_idx) {
     */
     auto &node = tree_[node_idx];
 
-    const auto moves = board_.get_legal_moves();
+    board_.get_legal_moves(moves_);
 
-    if (nodes_ + moves.size() >= tree_.size())
+    if (nodes_ + moves_.size() >= tree_.size())
         return false;
 
     bool set_first = false;
-    for (auto &move : moves) {
+    for (auto &move : moves_) {
         const auto child_node_idx = push_node(node_idx, move);
         if (!set_first) {
             node.add_first_child(child_node_idx);
@@ -129,9 +131,7 @@ float Searcher::play(std::size_t node_idx) {
     */
     const auto cur = board_.get_turn();
     while (!board_.is_game_over()) {
-        const auto moves = board_.get_legal_moves();
-        const auto move = moves[rng(sed) % moves.size()];
-        playout_played_by_[move.get_pos()] = board_.get_turn();
+        const auto move = board_.pick_random_move(sed);
         board_.make_move(move);
     }
     return cur == board_.get_turn() ? 1.0f : 0.0f;
@@ -171,7 +171,9 @@ std::pair<Move, float> Searcher::search(Board<BOARD_SIZE> &board, SearchLimits &
     limits.set_start_time();
     nodes_ = 0;
     board_ = root_board_ = board;
-    tree_.resize(limits.get_max_nodes());
+
+    if (tree_.size() != limits.get_max_nodes())
+        tree_.resize(limits.get_max_nodes());
 
     // root node
     push_node(inf, Move(0));
@@ -180,7 +182,9 @@ std::pair<Move, float> Searcher::search(Board<BOARD_SIZE> &board, SearchLimits &
     constexpr int max_iterations = 1'000'000;
 
     while (iterations < max_iterations && !limits.check_time_elapsed()) {
-        iteration();
+        bool result = iteration();
+        if (!result)
+            break;
         iterations++;
     }
 
@@ -197,9 +201,9 @@ std::pair<Move, float> Searcher::search(Board<BOARD_SIZE> &board, SearchLimits &
         }
     }
 
-    std::cerr << std::format(
-        "Searched {} nodes and {} iterations for {} seconds\n", nodes_, iterations, limits.get_time_elapsed() / 1000.0
-    );
+    // std::cerr << std::format(
+    //     "Searched {} nodes and {} iterations for {} seconds\n", nodes_, iterations, limits.get_time_elapsed() / 1000.0
+    // );
     
     return std::make_pair(tree_[best_child].get_move(), 1.0 * tree_[best_child].get_wins() / tree_[best_child].get_visits());
 }

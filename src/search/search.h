@@ -28,7 +28,7 @@ private:
 
     void backprop(std::size_t node_idx, Player turn, float score);
 
-    void iteration();
+    bool iteration();
 
     std::size_t push_node(std::size_t parent_index, Move move);
 
@@ -36,6 +36,7 @@ private:
 private:
     Board<BOARD_SIZE> board_, root_board_;
     std::vector<Node> tree_;
+    std::vector<Move> moves_; // used for legal moves generation
     std::size_t nodes_;
 
     std::array<Player, BOARD_SIZE * BOARD_SIZE> playout_played_by_;

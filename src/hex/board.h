@@ -5,6 +5,7 @@
 #include <array>
 #include <fstream>
 #include <ostream>
+#include <random>
 
 enum class Player {
     WHITE, BLACK, NONE
@@ -21,12 +22,22 @@ public:
 
     void undo();
 
-    std::vector<Move> get_legal_moves() const;
+    void get_legal_moves(std::vector<Move> &moves) const;
 
     bool is_game_over();
 
     Player get_turn() const {
         return turn_;
+    }
+
+    std::array<uint8_t, Size*Size> get_raw_board() const {
+        return board_;
+    }
+
+    Move pick_random_move(std::mt19937& rng) const {
+        auto raw_positions = empty_positions_.get();
+        std::uniform_int_distribution<std::size_t> dist(0, raw_positions.size() - 1);
+        return Move(raw_positions[dist(rng)]);
     }
 
 
@@ -52,11 +63,11 @@ public:
 
             // Print the cells
             for (int col = 0; col < Size; ++col) {
-                Player p = board.get_cell(row, col);
+                uint8_t p = board.get_cell(row, col);
                 
-                if (p == Player::WHITE) {
+                if (p == static_cast<uint8_t>(Player::WHITE)) {
                     os << "W  ";
-                } else if (p == Player::BLACK) {
+                } else if (p == static_cast<uint8_t>(Player::BLACK)) {
                     os << "B  ";
                 } else {
                     os << ".  "; // Empty space
@@ -77,7 +88,7 @@ private:
         return 0 <= row && row < Size && 0 <= col && col < Size;
     }
 
-    Player get_cell(int row, int col) const {
+    uint8_t get_cell(int row, int col) const {
         return board_[get_pos(row, col)];
     }
 
@@ -89,16 +100,17 @@ private:
 
     Player turn_;
     std::array<int, 4> edges_;
-    std::vector<Player> board_;
+    std::array<uint8_t, Size*Size> board_;
     std::vector<UndoState> states_;
     DSU dsu_;
     FastSet<Size*Size> empty_positions_;
 };
 
 template<int Size>
-Board<Size>::Board() : board_(Size * Size, Player::NONE), dsu_(Size * Size + 4) {
+Board<Size>::Board() : dsu_(Size * Size + 4) {
     turn_ = Player::BLACK;
     states_.clear();
+    std::fill(board_.begin(), board_.end(), static_cast<uint8_t>(Player::NONE));
 
     for (int i = 0; i < Size * Size; i++)
         empty_positions_.add(i);
@@ -118,9 +130,9 @@ void Board<Size>::make_move(Move move) {
     auto row = pos / Size, col = pos % Size;
     int operations = 0;
 
-    assert(board_[pos] == Player::NONE);
+    assert(board_[pos] == static_cast<uint8_t>(Player::NONE));
 
-    board_[pos] = turn_;
+    board_[pos] = static_cast<uint8_t>(turn_);
 
     // std::cout << move.to_string(Size) << " " << pos << "\n";
 
@@ -163,19 +175,16 @@ void Board<Size>::undo() {
 
     auto pos = move.get_pos();
     empty_positions_.add(pos);
-    board_[pos] = Player::NONE;
+    board_[pos] = static_cast<uint8_t>(Player::NONE);
     turn_ = turn_ == Player::WHITE ? Player::BLACK : Player::WHITE;
 }
 
 template<int Size>
-std::vector<Move> Board<Size>::get_legal_moves() const {
+void Board<Size>::get_legal_moves(std::vector<Move> &moves) const {
     auto raw_positions = empty_positions_.get();
-    std::vector<Move> legal_moves;
-    legal_moves.reserve(raw_positions.size());
+    moves.clear();
     for (auto &pos : raw_positions)
-        legal_moves.emplace_back(pos);
-
-    return legal_moves;
+        moves.emplace_back(pos);
 }
 
 template<int Size>

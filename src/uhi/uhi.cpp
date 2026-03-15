@@ -67,7 +67,9 @@ UHI::UHI() {
         board_.undo();
     };
     commands_["all_legal_moves"] = [&](std::istringstream&) {
-        const auto moves = board_.get_legal_moves();
+        std::vector<Move> moves;
+        moves.reserve(BOARD_SIZE * BOARD_SIZE);
+        board_.get_legal_moves(moves);
         for (auto &move : moves)
             std::cout << move.to_string(BOARD_SIZE) << " ";
     };
