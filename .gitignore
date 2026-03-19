@@ -1,2 +1,5 @@
 hex*
 *.o
+compile_commands.json
+.vscode
+.cache
