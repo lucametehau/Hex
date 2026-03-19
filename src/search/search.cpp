@@ -47,7 +47,7 @@ float Searcher::get_score(
         exploit = (1.0 - beta) * exploit_normal + beta * exploit_amaf;
     }
 
-    const float exploration = EXPLORATION_CONSTANT * policy * std::sqrtf(std::log(parent_visits) / (visits + 1));
+    const float exploration = EXPLORATION_CONSTANT * policy * std::sqrt(std::log(parent_visits) / (visits + 1));
 
     return exploit + exploration;
 }
