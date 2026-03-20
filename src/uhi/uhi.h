@@ -15,6 +15,7 @@ private:
     Board<BOARD_SIZE> board_;
     Searcher searcher_;
     SearchLimits limits_;
+    Network *nn_;
 
     std::map<std::string, std::function<void(std::istringstream&)>> commands_;
 };

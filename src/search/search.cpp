@@ -127,14 +127,55 @@ bool Searcher::expand(std::size_t node_idx) {
 
 float Searcher::play(std::size_t node_idx) {
     /*
-    Play out random game starting from selected leaf.
+    Evaluate statically current node.
     */
-    const auto cur = board_.get_turn();
-    while (!board_.is_game_over()) {
-        const auto move = board_.pick_random_move(sed);
-        board_.make_move(move);
+   
+    auto cells = board_.get_raw_board();
+    auto turn = board_.get_turn();
+    
+    int us_piece = (turn == Player::WHITE) ? 0 : 1;
+    int them_piece = (turn == Player::WHITE) ? 1 : 0;
+
+    int16_t acc[HIDDEN_SIZE];
+
+    for (int i = 0; i < HIDDEN_SIZE; i++) {
+        acc[i] = nn_->feature_bias.vals[i];
     }
-    return cur == board_.get_turn() ? 1.0f : 0.0f;
+    
+    for (int sq = 0; sq < 169; sq++) {
+        int piece = cells[sq];
+        if (piece == static_cast<int>(Player::NONE)) continue;
+
+        int x = sq % 13;
+        int y = sq / 13;
+
+        if (turn == Player::BLACK) {
+            std::swap(x, y);
+        }
+        int mapped_sq = y * 13 + x;
+
+        int feature_idx = (piece == us_piece) ? mapped_sq : 169 + mapped_sq;
+
+        for (int i = 0; i < HIDDEN_SIZE; i++) {
+            acc[i] += nn_->feature_weights[feature_idx].vals[i];
+        }
+    }
+
+    int32_t output = 0;
+    for (int i = 0; i < HIDDEN_SIZE; i++) {
+        int32_t act = std::clamp(static_cast<int>(acc[i]), 0, QA);
+        act *= act;
+        output += act * nn_->output_weights[i];
+    }
+
+    output /= QA;
+    output += nn_->output_bias;
+
+    float logit = static_cast<float>(output * SCALE) / (QA * QB);
+    
+    float win_prob = 1.0f / (1.0f + std::exp(-logit));
+    
+    return win_prob;
 }
 
 void Searcher::backprop(std::size_t node_idx, Player turn, float score) {
@@ -167,10 +208,11 @@ void Searcher::backprop(std::size_t node_idx, Player turn, float score) {
     }
 }
 
-std::pair<Move, float> Searcher::search(Board<BOARD_SIZE> &board, SearchLimits &limits) {
+std::pair<Move, float> Searcher::search(Board<BOARD_SIZE> &board, Network *nn, SearchLimits &limits) {
     limits.set_start_time();
     nodes_ = 0;
     board_ = root_board_ = board;
+    nn_ = nn;
 
     if (tree_.size() != limits.get_max_nodes())
         tree_.resize(limits.get_max_nodes());
@@ -201,9 +243,9 @@ std::pair<Move, float> Searcher::search(Board<BOARD_SIZE> &board, SearchLimits &
         }
     }
 
-    // std::cerr << std::format(
-    //     "Searched {} nodes and {} iterations for {} seconds\n", nodes_, iterations, limits.get_time_elapsed() / 1000.0
-    // );
+    std::cout << std::format(
+        "Searched {} nodes and {} iterations for {} seconds\n", nodes_, iterations, limits.get_time_elapsed() / 1000.0
+    );
     
     return std::make_pair(tree_[best_child].get_move(), 1.0 * tree_[best_child].get_wins() / tree_[best_child].get_visits());
 }

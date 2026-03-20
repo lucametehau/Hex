@@ -2,6 +2,7 @@
 #include "node.h"
 #include "limits.h"
 #include "../hex/board.h"
+#include "../network/network.h"
 #include <limits>
 
 constexpr std::size_t inf = std::numeric_limits<std::size_t>::max();
@@ -15,7 +16,7 @@ class Searcher {
 public:
     Searcher() = default;
 
-    std::pair<Move, float> search(Board<BOARD_SIZE> &board, SearchLimits &limits);
+    std::pair<Move, float> search(Board<BOARD_SIZE> &board, Network *nn, SearchLimits &limits);
 
 private:
     float get_score(std::size_t parent_visits, std::size_t visits, float wins, std::size_t visits_amaf, float wins_amaf, float policy, float parent_exploit);
@@ -38,6 +39,7 @@ private:
     std::vector<Node> tree_;
     std::vector<Move> moves_; // used for legal moves generation
     std::size_t nodes_;
+    Network *nn_;
 
     std::array<Player, BOARD_SIZE * BOARD_SIZE> playout_played_by_;
 };

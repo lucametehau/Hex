@@ -3,7 +3,7 @@
 #include <iostream>
 #include <sstream>
 
-constexpr std::string_view VERSION = "1.4";
+constexpr std::string_view VERSION = "1.5";
 
 UHI::UHI() {
     // create command map
@@ -38,7 +38,7 @@ UHI::UHI() {
         iss >> player;
         assert ((player == "white" ? Player::WHITE : Player::BLACK) == board_.get_turn());
 
-        const auto [move, score] = searcher_.search(board_, limits_);
+        const auto [move, score] = searcher_.search(board_, nn_, limits_);
 
         std::cout << move.to_string(BOARD_SIZE) << "" << std::endl;
 
@@ -55,7 +55,7 @@ UHI::UHI() {
 
         assert ((player == "white" ? Player::WHITE : Player::BLACK) == board_.get_turn());
 
-        const auto [move, score] = searcher_.search(board_, limits_);
+        const auto [move, score] = searcher_.search(board_, nn_, limits_);
 
         std::cout << move.to_string(BOARD_SIZE);
 
@@ -116,6 +116,10 @@ UHI::UHI() {
 void UHI::uhi_loop() {
     std::cerr << "This is a noob Hex engine, welcome!" << std::endl;
 
+    nn_ = new Network();
+
+    load_network(nn_);
+
     std::string input;
     while (getline(std::cin, input)) {
         std::istringstream iss(input);
@@ -133,4 +137,6 @@ void UHI::uhi_loop() {
         commands_[command](iss);
         std::cout << std::endl << std::endl;
     }
+
+    delete nn_;
 }

@@ -29,8 +29,8 @@ class GTPEngine:
             if line == "\n": 
                 break
             response += line
-            
-        return response[2:].strip()
+        print(response)
+        return response.split('\n')[-2].strip() if len(response.split('\n')) > 2 else response[2:].strip()
 
     def close(self):
         try:
@@ -54,12 +54,13 @@ def play_game(engine_black, engine_white, timelimit, nodes):
     engine_black.send(f"setoption nodes {nodes}")
     engine_black.send("clear_board")
     engine_white.send(f"setoption time {timelimit}")
-    engine_black.send(f"setoption nodes {nodes}")
+    engine_white.send(f"setoption nodes {nodes}")
     engine_white.send("clear_board")
 
     while True:
         # Black's Turn
         b_move = engine_black.send("genmove black")
+        print(b_move)
         if b_move.lower() == "resign" or b_move == "":
             return 2 # Player 2 (White) wins
 
@@ -69,7 +70,7 @@ def play_game(engine_black, engine_white, timelimit, nodes):
         w_move = engine_white.send("genmove white")
         if w_move.lower() == "resign" or w_move == "":
             return 1 # Player 1 (Black) wins
-
+        print(w_move)
         engine_black.send(f"play white {w_move}")
 
 def play_single_match(bin_a, bin_b, timelimit, nodes, game_index):
