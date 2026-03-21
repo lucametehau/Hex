@@ -14,7 +14,7 @@ class GTPEngine:
             [binary_path],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL, 
+            stderr=subprocess.PIPE, 
             text=True,
             bufsize=1 
         )
@@ -28,6 +28,10 @@ class GTPEngine:
             line = self.process.stdout.readline()
             if line == "\n": 
                 break
+            if line == "":
+                err = self.process.stderr.read()
+                print("STDERR:", err)
+                raise RuntimeError(f"{self.name} died after command: {cmd}")
             response += line
             
         return response[2:].strip()
@@ -49,12 +53,12 @@ def calculate_elo(wins, losses):
     
     return -400.0 * math.log10(1.0 / win_rate - 1.0)
 
-def play_game(engine_black, engine_white, timelimit, nodes):
+def play_game(engine_black, engine_white, timelimit, nodes, verbose=False):
     engine_black.send(f"setoption time {timelimit}")
     engine_black.send(f"setoption nodes {nodes}")
     engine_black.send("clear_board")
     engine_white.send(f"setoption time {timelimit}")
-    engine_black.send(f"setoption nodes {nodes}")
+    engine_white.send(f"setoption nodes {nodes}")
     engine_white.send("clear_board")
 
     while True:
@@ -65,6 +69,9 @@ def play_game(engine_black, engine_white, timelimit, nodes):
 
         engine_white.send(f"play black {b_move}")
 
+        if verbose:
+            print(b_move)
+
         # White's Turn
         w_move = engine_white.send("genmove white")
         if w_move.lower() == "resign" or w_move == "":
@@ -72,7 +79,10 @@ def play_game(engine_black, engine_white, timelimit, nodes):
 
         engine_black.send(f"play white {w_move}")
 
-def play_single_match(bin_a, bin_b, timelimit, nodes, game_index):
+        if verbose:
+            print(w_move)
+
+def play_single_match(bin_a, bin_b, timelimit, nodes, game_index, verbose=False):
     """Worker function that spins up fresh engines for one single game."""
     engine_a = GTPEngine(bin_a, "Engine A")
     engine_b = GTPEngine(bin_b, "Engine B")
@@ -81,10 +91,10 @@ def play_single_match(bin_a, bin_b, timelimit, nodes, game_index):
     is_a_black = (game_index % 2 == 0)
     
     if is_a_black:
-        winner = play_game(engine_a, engine_b, timelimit, nodes)
+        winner = play_game(engine_a, engine_b, timelimit, nodes, verbose)
         a_won = (winner == 1)
     else:
-        winner = play_game(engine_b, engine_a, timelimit, nodes)
+        winner = play_game(engine_b, engine_a, timelimit, nodes, verbose)
         a_won = (winner == 2)
         
     # Clean up the subprocesses so we don't leak memory
@@ -141,4 +151,7 @@ if __name__ == "__main__":
     nodes = int(sys.argv[5])
     concurrency = int(sys.argv[6])
 
-    run_tournament(bin_a, bin_b, games, timelimit, nodes, concurrency)
+    if concurrency == 0:
+        play_single_match(bin_a, bin_b, timelimit, nodes, 0, True)
+    else:
+        run_tournament(bin_a, bin_b, games, timelimit, nodes, concurrency)
