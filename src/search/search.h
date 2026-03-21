@@ -1,4 +1,5 @@
 #pragma once
+#include "adjacent.h"
 #include "node.h"
 #include "limits.h"
 #include "../hex/board.h"
@@ -32,11 +33,13 @@ private:
 
     std::size_t push_node(std::size_t parent_index, Move move);
 
+    std::vector<Move> get_relevant_moves();
 
 private:
     Board<BOARD_SIZE> board_, root_board_;
     std::vector<Node> tree_;
     std::size_t nodes_;
+    AdjacentValues adj_values;
 
     std::array<Player, BOARD_SIZE * BOARD_SIZE> playout_played_by_;
 };

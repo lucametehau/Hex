@@ -26,8 +26,8 @@ public:
 
         auto pos = index_[x];
         std::swap(data_.back(), data_[pos]);
-        data_.pop_back();
         index_[data_[pos]] = pos;
+        data_.pop_back();
         index_[x] = -1;
     }
 

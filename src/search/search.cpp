@@ -1,5 +1,6 @@
 #include "search.h"
 #include "limits.h"
+#include "adjacent.h"
 #include <limits>
 #include <random>
 #include <iostream>
@@ -105,7 +106,7 @@ bool Searcher::expand(std::size_t node_idx) {
     */
     auto &node = tree_[node_idx];
 
-    const auto moves = board_.get_legal_moves();
+    const auto moves = get_relevant_moves();
 
     if (nodes_ + moves.size() >= tree_.size())
         return false;
@@ -121,6 +122,22 @@ bool Searcher::expand(std::size_t node_idx) {
     }
 
     return true;
+}
+
+std::vector<Move> Searcher::get_relevant_moves() {
+    const auto moves = board_.get_legal_moves();
+    std::vector<Move> relevant_moves;
+    relevant_moves.reserve(moves.size());
+    for (auto &move : moves) {
+        if (adj_values.get_value(board_.get_adjacent(move)) > -INF)
+            relevant_moves.emplace_back(move);
+    }
+    if(relevant_moves.size() == 0) {
+        for(auto &move : moves) {
+            relevant_moves.emplace_back(move);
+        }
+    }
+    return relevant_moves;
 }
 
 float Searcher::play(std::size_t node_idx) {
