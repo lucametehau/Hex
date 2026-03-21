@@ -29,6 +29,9 @@ public:
         return turn_;
     }
 
+    // Returns the 6 adjacent positions in base 3, with 0 for empty,
+    // 1 for stone of current_player, and 2 for stone of opponent
+    int get_adjacent(Move move);
 
     // ngl I'm too lazy to do this myself, credits to Gemini
     friend std::ostream& operator<<(std::ostream &os, const Board &board) {
@@ -182,4 +185,38 @@ template<int Size>
 bool Board<Size>::is_game_over() {
     return dsu_.is_connected(edges_[0], edges_[2]) || 
            dsu_.is_connected(edges_[1], edges_[3]);
+}
+
+template<int Size>
+int Board<Size>::get_adjacent(Move move) {
+    constexpr std::array<std::pair<int, int>, 6> directions2 = {{
+        {0, -1}, {-1, 0}, {-1, 1}, {0, 1}, {1, 0}, {1, -1}
+    }};
+
+    auto pos = move.get_pos();
+    auto row = pos / Size, col = pos % Size;
+
+    int val = 0;
+
+    for (auto &[dx, dy] : directions2) {
+        int new_row = row + dx, new_col = col + dy;
+        auto new_pos = get_pos(new_row, new_col);
+
+        if (is_inside(new_row, new_col)) {
+            val = val * 3 + ((board_[new_pos] == Player::NONE) ? 0
+            : (board_[new_pos] == turn_ ? 1 : 2));
+        }
+        else {
+            if (new_row < 0)
+                val = val * 3 + (turn_ == Player::WHITE ? 1 : 2);
+            else if (new_col < 0)
+                val = val * 3 + (turn_ == Player::BLACK ? 1 : 2);
+            else if (new_row >= Size)
+                val = val * 3 + (turn_ == Player::WHITE ? 1 : 2);
+            else if (new_col >= Size)
+                val = val * 3 + (turn_ == Player::BLACK ? 1 : 2);
+        }
+    }
+
+    return val;
 }
