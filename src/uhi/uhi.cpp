@@ -5,12 +5,18 @@
 
 constexpr std::string_view VERSION = "1.5";
 
+/*
+play black d12
+play white b8
+play black j11
+play white l3
+*/
+
 UHI::UHI() {
     // create command map
     commands_["boardsize"] = [&](std::istringstream &iss){
         int n;
-        iss >> n;
-        if (iss >> n);
+        iss >> n >> n;
     };
     commands_["clear_board"] = [&](std::istringstream&) {
         board_ = Board<BOARD_SIZE>();
@@ -40,9 +46,9 @@ UHI::UHI() {
 
         const auto [move, score] = searcher_.search(board_, nn_, limits_);
 
-        std::cout << move.to_string(BOARD_SIZE) << "" << std::endl;
+        std::cout << "Playing with score of " << 100.0 * score << "%\n";
 
-        std::cerr << "Playing with score of " << 100.0 * score << "%";
+        std::cout << move.to_string(BOARD_SIZE) << "" << std::endl;
     };
     commands_["genmove"] = [&](std::istringstream &iss) {
         std::string player;
@@ -57,9 +63,9 @@ UHI::UHI() {
 
         const auto [move, score] = searcher_.search(board_, nn_, limits_);
 
-        std::cout << move.to_string(BOARD_SIZE);
+        std::cout << "Playing with score of " << 100.0 * score << "%" << std::endl;
 
-        std::cerr << std::endl << "Playing with score of " << 100.0 * score << "%";
+        std::cout << move.to_string(BOARD_SIZE);
 
         board_.make_move(move);
     };

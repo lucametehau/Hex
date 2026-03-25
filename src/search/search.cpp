@@ -9,9 +9,8 @@ const auto seed = std::chrono::high_resolution_clock::now().time_since_epoch().c
 std::mt19937 sed(seed);
 
 std::size_t Searcher::push_node(std::size_t parent_index, Move move) {
-    auto idx = nodes_++;
-    tree_[idx] = Node(parent_index, move);
-    return idx;
+    tree_.push_back(Node(parent_index, move));
+    return tree_.size() - 1;
 }
 
 bool Searcher::iteration() {
@@ -25,7 +24,7 @@ bool Searcher::iteration() {
 
     const auto node_turn = board_.get_turn();
 
-    auto score = play(node_idx);
+    auto score = play();
 
     backprop(node_idx, node_turn, score);
 
@@ -109,7 +108,7 @@ bool Searcher::expand(std::size_t node_idx) {
 
     board_.get_legal_moves(moves_);
 
-    if (nodes_ + moves_.size() >= tree_.size())
+    if (tree_.size() + moves_.size() >= tree_.capacity())
         return false;
 
     bool set_first = false;
@@ -125,57 +124,17 @@ bool Searcher::expand(std::size_t node_idx) {
     return true;
 }
 
-float Searcher::play(std::size_t node_idx) {
+float Searcher::play() {
     /*
     Evaluate statically current node.
     */
-   
-    auto cells = board_.get_raw_board();
-    auto turn = board_.get_turn();
-    
-    int us_piece = (turn == Player::WHITE) ? 0 : 1;
-    int them_piece = (turn == Player::WHITE) ? 1 : 0;
-
-    int16_t acc[HIDDEN_SIZE];
-
-    for (int i = 0; i < HIDDEN_SIZE; i++) {
-        acc[i] = nn_->feature_bias.vals[i];
-    }
-    
-    for (int sq = 0; sq < 169; sq++) {
-        int piece = cells[sq];
-        if (piece == static_cast<int>(Player::NONE)) continue;
-
-        int x = sq % 13;
-        int y = sq / 13;
-
-        if (turn == Player::BLACK) {
-            std::swap(x, y);
-        }
-        int mapped_sq = y * 13 + x;
-
-        int feature_idx = (piece == us_piece) ? mapped_sq : 169 + mapped_sq;
-
-        for (int i = 0; i < HIDDEN_SIZE; i++) {
-            acc[i] += nn_->feature_weights[feature_idx].vals[i];
-        }
+    if (board_.is_game_over()) {
+        return 0.0f;
     }
 
-    int32_t output = 0;
-    for (int i = 0; i < HIDDEN_SIZE; i++) {
-        int32_t act = std::clamp(static_cast<int>(acc[i]), 0, QA);
-        act *= act;
-        output += act * nn_->output_weights[i];
-    }
-
-    output /= QA;
-    output += nn_->output_bias;
-
-    float logit = static_cast<float>(output * SCALE) / (QA * QB);
-    
-    float win_prob = 1.0f / (1.0f + std::exp(-logit));
-    
-    return win_prob;
+    const auto eval = nn_->evaluate(board_);
+    std::cout << board_ << "\n" << eval << "\n";
+    return 1.0f / (1.0f + std::exp(-eval));
 }
 
 void Searcher::backprop(std::size_t node_idx, Player turn, float score) {
@@ -210,12 +169,11 @@ void Searcher::backprop(std::size_t node_idx, Player turn, float score) {
 
 std::pair<Move, float> Searcher::search(Board<BOARD_SIZE> &board, Network *nn, SearchLimits &limits) {
     limits.set_start_time();
-    nodes_ = 0;
     board_ = root_board_ = board;
     nn_ = nn;
 
-    if (tree_.size() != limits.get_max_nodes())
-        tree_.resize(limits.get_max_nodes());
+    tree_.clear();
+    tree_.reserve(limits.get_max_nodes());
 
     // root node
     push_node(inf, Move(0));
@@ -244,7 +202,7 @@ std::pair<Move, float> Searcher::search(Board<BOARD_SIZE> &board, Network *nn, S
     }
 
     std::cout << std::format(
-        "Searched {} nodes and {} iterations for {} seconds\n", nodes_, iterations, limits.get_time_elapsed() / 1000.0
+        "Searched {} nodes and {} iterations for {} seconds\n", tree_.size(), iterations, limits.get_time_elapsed() / 1000.0
     );
     
     return std::make_pair(tree_[best_child].get_move(), 1.0 * tree_[best_child].get_wins() / tree_[best_child].get_visits());

@@ -7,8 +7,6 @@
 
 constexpr std::size_t inf = std::numeric_limits<std::size_t>::max();
 
-constexpr int BOARD_SIZE = 13;
-
 constexpr float FPU_CONSTANT = 1.0f;
 constexpr float EXPLORATION_CONSTANT = 1.414f;
 
@@ -25,7 +23,7 @@ private:
 
     bool expand(std::size_t node_idx);
 
-    float play(std::size_t node_idx);
+    float play();
 
     void backprop(std::size_t node_idx, Player turn, float score);
 
@@ -38,7 +36,6 @@ private:
     Board<BOARD_SIZE> board_, root_board_;
     std::vector<Node> tree_;
     std::vector<Move> moves_; // used for legal moves generation
-    std::size_t nodes_;
     Network *nn_;
 
     std::array<Player, BOARD_SIZE * BOARD_SIZE> playout_played_by_;

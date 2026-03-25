@@ -10,7 +10,7 @@ public:
 
     Move(int row, int col, int size) : pos_(row * size + col) {}
 
-    Move(int pos) :pos_(pos) {}
+    Move(int pos) : pos_(pos) {}
 
     int get_pos() const {
         return pos_;

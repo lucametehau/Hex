@@ -11,6 +11,8 @@ enum class Player {
     WHITE, BLACK, NONE
 };
 
+constexpr int BOARD_SIZE = 13;
+
 template<int Size>
 class Board {
 public:
