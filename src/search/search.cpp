@@ -36,12 +36,12 @@ float Searcher::get_score(
     float policy,  float parent_exploit
 ) {
     // UCT + RAVE + FPU
-    const float fpu_constant = !parent_visits ? FPU_CONSTANT : 1.0f - parent_exploit;
+    const float fpu_constant = !parent_visits ? FPU_CONSTANT : parent_exploit;
     float exploit = fpu_constant;
 
     if (visits || visits_amaf) {
-        const float exploit_normal = !visits ? fpu_constant : wins / visits;
-        const float exploit_amaf = !visits_amaf ? fpu_constant : wins_amaf / visits_amaf;
+        const float exploit_normal = !visits ? fpu_constant : 1.0f - wins / visits;
+        const float exploit_amaf = !visits_amaf ? fpu_constant : 1.0f - wins_amaf / visits_amaf;
 
         const float beta = visits_amaf / (visits_amaf + visits + visits_amaf * visits / 10000.0);
 
@@ -129,11 +129,11 @@ float Searcher::play() {
     Evaluate statically current node.
     */
     if (board_.is_game_over()) {
+        std::cout << board_ << " " << static_cast<int>(board_.get_turn()) << "\n";
         return 0.0f;
     }
 
     const auto eval = nn_->evaluate(board_);
-    std::cout << board_ << "\n" << eval << "\n";
     return 1.0f / (1.0f + std::exp(-eval));
 }
 

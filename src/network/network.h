@@ -6,7 +6,7 @@
 #include <memory>
 
 constexpr int INPUTS = BOARD_SIZE * BOARD_SIZE * 2;
-constexpr int HIDDEN_SIZE = 16;
+constexpr int HIDDEN_SIZE = 1024;
 constexpr int QA = 255;
 constexpr int QB = 64;
 

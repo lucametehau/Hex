@@ -24,6 +24,22 @@ UHI::UHI() {
     commands_["showboard"] = [&](std::istringstream&) {
         std::cout << "\n" << board_;
     };
+    commands_["setboard"] = [&](std::istringstream &iss) {
+        std::string s;
+        iss >> s;
+
+        board_ = Board<BOARD_SIZE>();
+
+        std::size_t pos = 0;
+        while (pos < s.size()) {
+            std::string move;
+            move += s[pos++];
+            while (pos < s.size() && std::isdigit(s[pos]))
+                move += s[pos++];
+            
+            board_.make_move(Move(move, BOARD_SIZE));
+        }
+    };
     commands_["final_score"] = [&](std::istringstream&) {
         if (board_.is_game_over())
             std::cout << (board_.get_turn() == Player::WHITE ? "B+" : "W+");
